@@ -1,257 +1,101 @@
 (function () {
   "use strict";
 
+  const FULL_ADDRESS = "0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd";
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const hasAnime = typeof anime !== "undefined";
-
-  /* ============================================================
-     STATE — mirrors the actual on-chain oracle result
-     ============================================================ */
-  const oracle = {
-    regime: "bull",
-    strategy: "aggressive",
-    confidence: 75,
-  };
-
-  let vaultBalance = 0;
-
-  /* ============================================================
-     TOAST
-     ============================================================ */
-  const toastEl = document.getElementById("toast");
+  const toast = document.getElementById("toast");
   let toastTimer = null;
 
   function showToast(message) {
-    toastEl.textContent = message;
+    toast.textContent = message;
     clearTimeout(toastTimer);
 
     if (hasAnime && !reduceMotion) {
-      anime.remove(toastEl);
+      anime.remove(toast);
       anime({
-        targets: toastEl,
+        targets: toast,
         opacity: [0, 1],
-        translateY: [20, 0],
-        duration: 260,
+        translateY: [18, 0],
+        duration: 180,
         easing: "easeOutQuad",
       });
     } else {
-      toastEl.style.opacity = "1";
-      toastEl.style.transform = "translate(-50%, 0)";
+      toast.style.opacity = "1";
+      toast.style.transform = "translate(-50%, 0)";
     }
 
     toastTimer = setTimeout(() => {
       if (hasAnime && !reduceMotion) {
         anime({
-          targets: toastEl,
+          targets: toast,
           opacity: [1, 0],
-          translateY: [0, 20],
-          duration: 220,
+          translateY: [0, 18],
+          duration: 160,
           easing: "easeInQuad",
         });
       } else {
-        toastEl.style.opacity = "0";
+        toast.style.opacity = "0";
       }
     }, 2400);
   }
 
-  /* ============================================================
-     COPY CONTRACT ADDRESS
-     ============================================================ */
-  const FULL_ADDRESS = "0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd";
-  const addressChip = document.getElementById("addressChip");
-
-  addressChip.addEventListener("click", async () => {
+  async function copyAddress() {
     try {
       await navigator.clipboard.writeText(FULL_ADDRESS);
-      showToast("Contract address copied");
-    } catch (err) {
+      showToast("Bradbury contract address copied");
+    } catch (error) {
       showToast(FULL_ADDRESS);
     }
-  });
+  }
 
-  /* ============================================================
-     PAGE LOAD SEQUENCE
-     ============================================================ */
-  function runLoadSequence() {
-    const panels = document.querySelectorAll(".panel");
+  function bindCopyButtons() {
+    const buttons = [
+      document.getElementById("addressChip"),
+      document.getElementById("copyAddressBtn"),
+    ].filter(Boolean);
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", copyAddress);
+    });
+  }
+
+  function animatePage() {
+    const fill = document.getElementById("confidenceFill");
 
     if (!hasAnime || reduceMotion) {
-      document.getElementById("confidenceFill").style.width = oracle.confidence + "%";
+      if (fill) fill.style.width = "75%";
       return;
     }
 
-    anime.set(panels, { opacity: 0, translateY: 14 });
-    anime.set(".oracle-readout__headline", { opacity: 0, translateY: 10 });
+    anime.set(".hero__content > *, .panel", { opacity: 0, translateY: 12 });
+    anime.set(fill, { width: "0%" });
 
-    anime
-      .timeline({ easing: "easeOutQuad" })
+    anime.timeline({ easing: "easeOutQuad" })
       .add({
-        targets: panels[0],
+        targets: ".hero__content > *",
         opacity: [0, 1],
-        translateY: [14, 0],
-        duration: 500,
+        translateY: [12, 0],
+        delay: anime.stagger(45),
+        duration: 420,
       })
-      .add(
-        {
-          targets: ".oracle-readout__headline",
-          opacity: [0, 1],
-          translateY: [10, 0],
-          duration: 450,
-        },
-        "-=250"
-      )
-      .add(
-        {
-          targets: "#confidenceFill",
-          width: ["0%", oracle.confidence + "%"],
-          duration: 900,
-          easing: "easeOutCubic",
-        },
-        "-=200"
-      )
-      .add(
-        {
-          targets: panels[1],
-          opacity: [0, 1],
-          translateY: [14, 0],
-          duration: 450,
-        },
-        "-=650"
-      )
-      .add(
-        {
-          targets: panels[2],
-          opacity: [0, 1],
-          translateY: [14, 0],
-          duration: 450,
-        },
-        "-=350"
-      )
-      .add(
-        {
-          targets: panels[3],
-          opacity: [0, 1],
-          translateY: [14, 0],
-          duration: 450,
-        },
-        "-=300"
-      );
-  }
-
-  /* ============================================================
-     SIGNAL STRIP — draw-on animation representing the classifier
-     ============================================================ */
-  function animateSignal() {
-    const path = document.getElementById("signalPath");
-    if (!path) return;
-
-    const length = path.getTotalLength();
-    path.style.strokeDasharray = length;
-    path.style.strokeDashoffset = length;
-
-    if (!hasAnime || reduceMotion) {
-      path.style.strokeDashoffset = "0";
-      return;
-    }
-
-    anime({
-      targets: path,
-      strokeDashoffset: [length, 0],
-      duration: 1400,
-      easing: "easeInOutSine",
-      delay: 250,
-    });
-  }
-
-  /* ============================================================
-     LIVE DOT — ambient pulse
-     ============================================================ */
-  function pulseLiveDot() {
-    if (!hasAnime || reduceMotion) return;
-
-    anime({
-      targets: "#liveDot",
-      scale: [1, 1.6],
-      opacity: [1, 0.35],
-      duration: 1400,
-      easing: "easeInOutSine",
-      direction: "alternate",
-      loop: true,
-    });
-  }
-
-  /* ============================================================
-     DEMO VAULT CONTROLS
-     ============================================================ */
-  const balanceNumber = document.getElementById("balanceNumber");
-  const depositInput = document.getElementById("depositInput");
-  const withdrawInput = document.getElementById("withdrawInput");
-  const depositBtn = document.getElementById("depositBtn");
-  const withdrawBtn = document.getElementById("withdrawBtn");
-
-  function renderBalance(from, to) {
-    if (hasAnime && !reduceMotion) {
-      anime({
-        targets: { value: from },
-        value: to,
-        duration: 500,
+      .add({
+        targets: ".panel",
+        opacity: [0, 1],
+        translateY: [12, 0],
+        delay: anime.stagger(35),
+        duration: 360,
+      }, "-=260")
+      .add({
+        targets: fill,
+        width: ["0%", "75%"],
+        duration: 720,
         easing: "easeOutCubic",
-        round: 100,
-        update: function (anim) {
-          balanceNumber.textContent = anim.animations[0].currentValue;
-        },
-      });
-    } else {
-      balanceNumber.textContent = to.toFixed(2);
-    }
+      }, "-=240");
   }
 
-  function bumpPanel(el) {
-    if (!hasAnime || reduceMotion) return;
-    anime({
-      targets: el,
-      borderColor: [el === depositBtn ? "#34d399" : "#fb7185", "var(--border)"],
-      duration: 500,
-      easing: "easeOutQuad",
-    });
-  }
-
-  depositBtn.addEventListener("click", () => {
-    const amount = parseFloat(depositInput.value);
-    if (!amount || amount <= 0) {
-      showToast("Enter an amount to deposit");
-      return;
-    }
-    const from = vaultBalance;
-    vaultBalance += amount;
-    renderBalance(from, vaultBalance);
-    depositInput.value = "";
-    showToast("Recorded locally — deposit(" + amount + ") not yet signed on-chain");
-  });
-
-  withdrawBtn.addEventListener("click", () => {
-    const amount = parseFloat(withdrawInput.value);
-    if (!amount || amount <= 0) {
-      showToast("Enter an amount to withdraw");
-      return;
-    }
-    if (amount > vaultBalance) {
-      showToast("Insufficient balance");
-      return;
-    }
-    const from = vaultBalance;
-    vaultBalance -= amount;
-    renderBalance(from, vaultBalance);
-    withdrawInput.value = "";
-    showToast("Recorded locally — withdraw(" + amount + ") not yet signed on-chain");
-  });
-
-  /* ============================================================
-     INIT
-     ============================================================ */
   document.addEventListener("DOMContentLoaded", () => {
-    runLoadSequence();
-    animateSignal();
-    pulseLiveDot();
+    bindCopyButtons();
+    animatePage();
   });
 })();

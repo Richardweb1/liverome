@@ -3,214 +3,221 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Liverome — Live Adaptive Yield Engine</title>
-<meta name="description" content="An autonomous yield vault on GenLayer. The oracle reads live market data and rebalances strategy on-chain, no humans in the loop." />
+<title>Liverome - GenLayer Adaptive Yield Vault</title>
+<meta name="description" content="Liverome is a GenLayer Bradbury prototype for an adaptive yield vault that rebalances strategy from live market data." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-
 <div class="noise"></div>
 
-<!-- ============ TOPBAR ============ -->
 <header class="topbar">
   <div class="topbar__inner">
-    <div class="brand">
-      <span class="brand__dot" id="liveDot"></span>
+    <a class="brand" href="#top" aria-label="Liverome home">
+      <span class="brand__mark"></span>
       <span class="brand__name">LIVEROME</span>
-    </div>
-
-    <div class="topbar__right">
-      <span class="pill pill--network">
-        <span class="pill__dot"></span>
-        Bradbury Testnet
-      </span>
-      <button class="chip" id="addressChip" title="Copy contract address">
-        <span class="chip__label">0x579b…11Fd</span>
-        <svg class="chip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none">
-          <rect x="9" y="9" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/>
-          <path d="M6 15H4.5A1.5 1.5 0 0 1 3 13.5v-9A1.5 1.5 0 0 1 4.5 3h9A1.5 1.5 0 0 1 15 4.5V6" stroke="currentColor" stroke-width="1.6"/>
-        </svg>
-      </button>
-    </div>
+    </a>
+    <nav class="topbar__nav" aria-label="Primary navigation">
+      <a href="#test-flow">Test Flow</a>
+      <a href="#roles">Users</a>
+      <a href="#roadmap">Roadmap</a>
+    </nav>
+    <button class="chip" id="addressChip" type="button" title="Copy contract address">
+      <span>0x579b...11Fd</span>
+      <span class="copy-icon" aria-hidden="true"></span>
+    </button>
   </div>
 </header>
 
-<main class="shell">
-
-  <!-- ============ ORACLE STATE (signature panel) ============ -->
-  <section class="panel panel--oracle" aria-labelledby="oracleHeading">
-    <div class="panel__eyebrow">
-      <span>ORACLE STATE</span>
-      <span class="eyebrow__meta" id="lastUpdated">verified on Bradbury · rebalance() accepted</span>
+<main id="top" class="shell">
+  <section class="hero">
+    <div class="hero__content">
+      <div class="status-line">
+        <span class="status-dot"></span>
+        <span>Live on GenLayer Bradbury</span>
+      </div>
+      <h1>Adaptive yield strategy, verified by GenLayer consensus.</h1>
+      <p>
+        Liverome is a working Bradbury prototype: users deposit into a vault, the contract reads live BTC market movement through GenLayer, and <code>rebalance()</code> updates the strategy on-chain.
+      </p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="https://studio.genlayer.com/contracts" target="_blank" rel="noopener">Open in Studio</a>
+        <a class="btn btn--ghost" href="https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd" target="_blank" rel="noopener">View Explorer</a>
+      </div>
+      <p class="fine-print">Wallet signing is not enabled in this public UI yet. Real contract testing is done from GenLayer Studio for this milestone.</p>
     </div>
 
-    <div class="oracle-readout">
-      <h1 id="oracleHeading" class="oracle-readout__headline">
-        <span class="regime-word" id="regimeWord" data-regime="bull">BULL</span>
-        <svg class="arrow" width="28" height="20" viewBox="0 0 28 20" fill="none" aria-hidden="true">
-          <path d="M1 10H26M26 10L18 2M26 10L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span class="strategy-word" id="strategyWord">AGGRESSIVE</span>
-      </h1>
-
-      <div class="oracle-readout__meta">
-        <div class="confidence">
-          <div class="confidence__label">
-            <span>Confidence</span>
-            <span class="confidence__value" id="confidenceValue">75%</span>
-          </div>
-          <div class="confidence__track">
-            <div class="confidence__fill" id="confidenceFill" style="width:0%"></div>
-          </div>
+    <aside class="panel panel--oracle" aria-label="Current oracle state">
+      <div class="panel__eyebrow">
+        <span>Current Strategy</span>
+        <span class="badge badge--verified">Accepted</span>
+      </div>
+      <div class="strategy-readout">
+        <span class="strategy-readout__regime">bull</span>
+        <span class="strategy-readout__arrow">-></span>
+        <span class="strategy-readout__strategy">aggressive</span>
+      </div>
+      <div class="confidence">
+        <div class="confidence__label">
+          <span>Oracle confidence</span>
+          <strong>75 / 100</strong>
+        </div>
+        <div class="confidence__track">
+          <span id="confidenceFill" class="confidence__fill"></span>
         </div>
       </div>
-    </div>
-
-    <!-- signal strip -->
-    <div class="signal" aria-hidden="true">
-      <svg class="signal__svg" viewBox="0 0 800 90" preserveAspectRatio="none">
-        <path id="signalPath" class="signal__path"
-          d="M0,55 L20,50 L40,58 L60,45 L80,52 L100,30 L120,48 L140,22 L160,40 L180,15 L200,35
-             L220,12 L240,28 L260,8 L280,24 L300,5 L320,20 L340,10 L360,26 L380,14 L400,30
-             L420,18 L440,34 L460,20 L480,38 L500,24 L520,42 L540,28 L560,45 L580,32 L600,50
-             L620,36 L640,52 L660,40 L680,55 L700,44 L720,58 L740,48 L760,60 L780,52 L800,58"
-          fill="none" />
-      </svg>
-    </div>
-
-    <p class="oracle-readout__reasoning">
-      <span class="reasoning__prefix">reasoning —</span>
-      "Deterministic CoinGecko BTC 24h change classifier."
-    </p>
+      <dl class="oracle-facts">
+        <div>
+          <dt>Contract</dt>
+          <dd>0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd</dd>
+        </div>
+        <div>
+          <dt>Consensus</dt>
+          <dd><code>gl.eq_principle.strict_eq</code></dd>
+        </div>
+        <div>
+          <dt>Signal</dt>
+          <dd>CoinGecko BTC 24h change classifier</dd>
+        </div>
+      </dl>
+    </aside>
   </section>
 
-  <!-- ============ VAULT + DECISION LOG ============ -->
-  <div class="columns">
+  <section class="panel summary-panel" aria-labelledby="whatHeading">
+    <div>
+      <p class="section-kicker">What the project does</p>
+      <h2 id="whatHeading">A GenLayer vault that changes behavior when the market changes.</h2>
+    </div>
+    <div class="summary-grid">
+      <article>
+        <span class="step-index">01</span>
+        <h3>Users deposit GEN</h3>
+        <p>The Bradbury contract stores internal user balances and total deposits. Withdraw is internal accounting for this prototype.</p>
+      </article>
+      <article>
+        <span class="step-index">02</span>
+        <h3>Oracle reads the market</h3>
+        <p>The contract fetches BTC 24h change and classifies it into bull, bear, sideways, or high volatility.</p>
+      </article>
+      <article>
+        <span class="step-index">03</span>
+        <h3>Strategy updates on-chain</h3>
+        <p>Validators must agree on the deterministic result before the contract stores the new strategy.</p>
+      </article>
+    </div>
+  </section>
 
-    <!-- VAULT -->
-    <section class="panel panel--vault" aria-labelledby="vaultHeading">
-      <div class="panel__eyebrow">
-        <span id="vaultHeading">VAULT</span>
-        <span class="badge badge--demo">Demo controls</span>
-      </div>
-
-      <div class="balance">
-        <span class="balance__label">Your balance</span>
-        <div class="balance__value">
-          <span id="balanceNumber">0</span>
-          <span class="balance__unit">GEN</span>
-        </div>
-      </div>
-
-      <div class="vault-form">
-        <div class="field">
-          <label for="depositInput">Deposit</label>
-          <div class="field__row">
-            <input type="number" id="depositInput" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
-            <button class="btn btn--primary" id="depositBtn">Deposit</button>
+  <section id="test-flow" class="columns">
+    <div class="panel">
+      <p class="section-kicker">Testing now</p>
+      <h2>How to test the live contract</h2>
+      <ol class="timeline">
+        <li>
+          <span>1</span>
+          <div>
+            <strong>Open GenLayer Studio</strong>
+            <p>Use the deployed contract address and your Bradbury wallet.</p>
           </div>
-        </div>
-
-        <div class="field">
-          <label for="withdrawInput">Withdraw</label>
-          <div class="field__row">
-            <input type="number" id="withdrawInput" placeholder="0.00" min="0" step="0.01" inputmode="decimal" />
-            <button class="btn btn--ghost" id="withdrawBtn">Withdraw</button>
+        </li>
+        <li>
+          <span>2</span>
+          <div>
+            <strong>Run deposit</strong>
+            <p>Send a small test value such as 1 GEN, then read <code>get_total_deposits()</code>.</p>
           </div>
-        </div>
-      </div>
+        </li>
+        <li>
+          <span>3</span>
+          <div>
+            <strong>Run rebalance</strong>
+            <p>Call <code>rebalance()</code> and confirm <code>get_strategy()</code> plus <code>get_history()</code>.</p>
+          </div>
+        </li>
+        <li>
+          <span>4</span>
+          <div>
+            <strong>Check explorer</strong>
+            <p>Accepted transactions prove the current milestone works on Bradbury.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
 
-      <p class="vault-note" id="vaultNote">Connect a signer to send real deposit() / withdraw() transactions. These controls update local state only.</p>
-    </section>
-
-    <!-- DECISION LOG -->
-    <section class="panel panel--log" aria-labelledby="logHeading">
-      <div class="panel__eyebrow">
-        <span id="logHeading">ORACLE DECISION LOG</span>
-        <span class="badge badge--verified">On-chain verified</span>
-      </div>
-
-      <div class="log-entry">
-        <div class="log-entry__row">
-          <span class="log-entry__key">regime</span>
-          <span class="tag tag--bull">bull</span>
-        </div>
-        <div class="log-entry__row">
-          <span class="log-entry__key">strategy</span>
-          <span class="tag tag--aggressive">aggressive</span>
-        </div>
-        <div class="log-entry__row">
-          <span class="log-entry__key">confidence</span>
-          <span class="log-entry__mono">75 / 100</span>
-        </div>
-        <div class="log-entry__row log-entry__row--reasoning">
-          <span class="log-entry__key">reasoning</span>
-          <span class="log-entry__mono log-entry__mono--wrap">"Deterministic CoinGecko BTC 24h change classifier."</span>
-        </div>
-      </div>
-
-      <div class="proof">
-        <div class="proof__row">
-          <span>Consensus</span>
-          <code>gl.eq_principle.strict_eq</code>
-        </div>
-        <div class="proof__row">
+    <div class="panel action-panel">
+      <p class="section-kicker">Live actions</p>
+      <h2>Use the verified tools</h2>
+      <div class="action-list">
+        <a href="https://studio.genlayer.com/contracts" target="_blank" rel="noopener">
+          <span>Studio</span>
+          <strong>Send deposit, withdraw, and rebalance calls</strong>
+        </a>
+        <a href="https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd" target="_blank" rel="noopener">
+          <span>Explorer</span>
+          <strong>Verify contract state and transaction status</strong>
+        </a>
+        <button id="copyAddressBtn" type="button">
           <span>Contract</span>
-          <a href="https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd" target="_blank" rel="noopener" class="proof__link">
-            0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd
-          </a>
-        </div>
-      </div>
-    </section>
-
-  </div>
-
-  <!-- ============ HOW IT WORKS ============ -->
-  <section class="panel panel--pipeline" aria-labelledby="pipelineHeading">
-    <div class="panel__eyebrow">
-      <span id="pipelineHeading">HOW THE ORACLE DECIDES</span>
-    </div>
-
-    <div class="pipeline">
-      <div class="pipeline__step">
-        <span class="pipeline__index">01</span>
-        <h3>Fetch</h3>
-        <p><code>gl.nondet.web.get()</code> pulls live BTC price and 24h change from CoinGecko inside a non-deterministic block.</p>
-      </div>
-      <div class="pipeline__step">
-        <span class="pipeline__index">02</span>
-        <h3>Classify</h3>
-        <p>Fixed thresholds turn the % change into one regime: <code>bull</code>, <code>bear</code>, <code>sideways</code>, or <code>high_volatility</code>.</p>
-      </div>
-      <div class="pipeline__step">
-        <span class="pipeline__index">03</span>
-        <h3>Reach consensus</h3>
-        <p><code>gl.eq_principle.strict_eq()</code> requires every validator to compute the identical regime before state updates on Bradbury.</p>
+          <strong>Copy deployed Bradbury address</strong>
+        </button>
       </div>
     </div>
   </section>
 
+  <section id="roles" class="panel roles-panel" aria-labelledby="rolesHeading">
+    <div>
+      <p class="section-kicker">Who uses it</p>
+      <h2 id="rolesHeading">Clear roles for the prototype and the next dApp version.</h2>
+    </div>
+    <div class="roles-grid">
+      <article>
+        <h3>User</h3>
+        <p>Deposits test GEN, checks personal balance, follows the active strategy, and withdraws from the prototype vault.</p>
+      </article>
+      <article>
+        <h3>Team</h3>
+        <p>Monitors Bradbury transactions, triggers rebalance tests, improves oracle rules, and validates the public demo flow.</p>
+      </article>
+      <article>
+        <h3>Investor or judge</h3>
+        <p>Sees what GenLayer adds: web data inside consensus, deterministic oracle decisions, and visible on-chain state changes.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="roadmap" class="panel roadmap-panel" aria-labelledby="roadmapHeading">
+    <div>
+      <p class="section-kicker">Next build step</p>
+      <h2 id="roadmapHeading">From verified prototype to real wallet dApp.</h2>
+    </div>
+    <div class="roadmap">
+      <div class="roadmap__item roadmap__item--done">
+        <span></span>
+        <div>
+          <strong>Bradbury contract accepted</strong>
+          <p>Deposit, withdraw, and deterministic rebalance are working.</p>
+        </div>
+      </div>
+      <div class="roadmap__item roadmap__item--active">
+        <span></span>
+        <div>
+          <strong>Public project interface</strong>
+          <p>This page explains the live contract and sends testers to the correct tools.</p>
+        </div>
+      </div>
+      <div class="roadmap__item">
+        <span></span>
+        <div>
+          <strong>Wallet connect and signed calls</strong>
+          <p>Next milestone: connect a signer, read balances, and send contract writes directly from the website.</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
-<footer class="footer">
-  <div class="footer__inner">
-    <div class="footer__left">
-      <span class="brand__name brand__name--small">LIVEROME</span>
-      <span class="footer__sep">·</span>
-      <span>Live Adaptive Yield Engine</span>
-    </div>
-    <div class="footer__right">
-      <a href="https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd" target="_blank" rel="noopener">Explorer</a>
-      <a href="https://studio.genlayer.com/contracts" target="_blank" rel="noopener">Studio</a>
-      <a href="https://docs.genlayer.com" target="_blank" rel="noopener">Docs</a>
-    </div>
-  </div>
-</footer>
-
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script src="app.js"></script>
