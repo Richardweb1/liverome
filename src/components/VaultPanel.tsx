@@ -24,7 +24,7 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
         <span className="badge badge--verified">Live account</span>
       </div>
 
-      <div className="balance">
+      <div className="balance mobile-only">
         <span className="balance__label">Your balance</span>
         <div className="balance__value">
           <span>{myBalance !== null ? fromBaseUnits(myBalance) : connected ? "…" : "—"}</span>
@@ -32,7 +32,7 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
         </div>
       </div>
 
-      <div className="balance balance--secondary">
+      <div className="balance balance--secondary mobile-only">
         <span className="balance__label">Total deposits (all users)</span>
         <div className="balance__value balance__value--small">
           <span>{totalDeposits !== null ? fromBaseUnits(totalDeposits) : "…"}</span>
@@ -89,7 +89,7 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
       </div>
 
       {!connected && (
-        <p className="vault-note">Connect your wallet to activate the vault controls and read your personal position.</p>
+        <p className="vault-note">Connect wallet first.</p>
       )}
     </section>
   );

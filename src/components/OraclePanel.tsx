@@ -19,8 +19,8 @@ export function OraclePanel({ strategy, history, connected, tx, onRebalance }: P
   return (
     <section className="panel panel--oracle">
       <div className="panel__eyebrow">
-        <span>MARKET BRAIN</span>
-        <span className="eyebrow__meta">CoinGecko signal · GenLayer consensus</span>
+        <span>STRATEGY</span>
+        <span className="eyebrow__meta">Live oracle</span>
       </div>
 
       <div className="oracle-readout__headline">
@@ -58,7 +58,7 @@ export function OraclePanel({ strategy, history, connected, tx, onRebalance }: P
       >
         {busy ? "Optimizing vault…" : "Optimize strategy"}
       </button>
-      {!connected && <p className="vault-note">Connect a wallet to ask the contract for a new strategy.</p>}
+      {!connected && <p className="vault-note">Connect wallet first.</p>}
     </section>
   );
 }
