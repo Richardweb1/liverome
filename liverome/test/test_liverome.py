@@ -65,6 +65,8 @@ def test_withdraw_preserves_claim_as_pending_until_payout(
     assert contract.get_user_pending_withdrawal_key(key) == 400
     assert contract.get_total_deposits() == 1000
     assert contract.get_total_pending_withdrawals() == 400
+    assert contract.get_last_withdraw()["payout_requested_amount"] == 400
+    assert contract.get_last_withdraw()["payout_request_count"] == 1
 
     accounting = contract.get_accounting()
     assert accounting["available_deposits"] == 600

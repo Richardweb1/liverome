@@ -35,7 +35,8 @@ https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a4
 
 - Wallet connection in the web app
 - `deposit()` payable transaction
-- `withdraw(amount)` creates a pending payout claim without deleting the user's right to funds
+- `withdraw(amount)` requests a native GEN payout with `emit_transfer(..., on="finalized")`
+- Pending withdrawal claims remain recorded until a payout is marked paid
 - `rebalance()` strategy optimization transaction
 - User vault balance
 - Total vault deposits
@@ -73,7 +74,7 @@ This is a working Bradbury testnet prototype. It demonstrates:
 - on-chain strategy updates
 - a real React dApp frontend connected to the deployed contract
 
-It is not a production yield product yet. The current withdrawal model is claim-based: `withdraw(amount)` moves the amount into `pending_withdrawals` so the user's claim is preserved until a payout is marked as paid. This avoids erasing a user's claim if native payout support is unavailable or fails.
+It is not a production yield product yet. The current withdrawal model requests a native GEN transfer on finalization and keeps a pending claim in storage until the payout is explicitly marked paid. This means the user's claim is not erased if an asynchronous payout message fails or needs manual review.
 
 ## Tech Stack
 

@@ -44,6 +44,9 @@ class Liverome(gl.Contract):
     last_withdraw_amount: u256
     last_withdraw_balance: u256
     last_withdraw_pending: u256
+    last_payout_requested_sender: Address
+    last_payout_requested_amount: u256
+    payout_request_count: u256
     withdraw_count: u256
 
     def __init__(self):
@@ -73,6 +76,9 @@ class Liverome(gl.Contract):
         self.last_withdraw_amount = u256(0)
         self.last_withdraw_balance = u256(0)
         self.last_withdraw_pending = u256(0)
+        self.last_payout_requested_sender = sender
+        self.last_payout_requested_amount = u256(0)
+        self.payout_request_count = u256(0)
         self.withdraw_count = u256(0)
 
     @gl.public.write.payable
@@ -112,12 +118,16 @@ class Liverome(gl.Contract):
         self.balances[key] = new_balance
         self.pending_withdrawals[key] = new_pending
         self.total_pending_withdrawals = self.total_pending_withdrawals + amount
+        gl.get_contract_at(sender).emit_transfer(value=amount, on="finalized")
 
         self.last_withdraw_sender = sender
         self.last_withdraw_key = key
         self.last_withdraw_amount = amount
         self.last_withdraw_balance = new_balance
         self.last_withdraw_pending = new_pending
+        self.last_payout_requested_sender = sender
+        self.last_payout_requested_amount = amount
+        self.payout_request_count = self.payout_request_count + u256(1)
         self.withdraw_count = self.withdraw_count + u256(1)
 
     @gl.public.write
@@ -237,6 +247,9 @@ class Liverome(gl.Contract):
             "amount": int(self.last_withdraw_amount),
             "balance": int(self.last_withdraw_balance),
             "pending": int(self.last_withdraw_pending),
+            "payout_requested_to": str(self.last_payout_requested_sender),
+            "payout_requested_amount": int(self.last_payout_requested_amount),
+            "payout_request_count": int(self.payout_request_count),
             "count": int(self.withdraw_count),
         }
 
