@@ -18,6 +18,7 @@ const STATUS_LABEL: Record<string, string> = {
 export function ActivityPanel({ tx, lastDeposit, lastWithdraw }: Props) {
   const lastDepositValue = lastDeposit?.value ?? lastDeposit?.amount ?? null;
   const lastWithdrawValue = lastWithdraw?.amount ?? null;
+  const lastWithdrawPending = lastWithdraw?.pending ?? null;
 
   return (
     <section className="panel panel--activity">
@@ -47,6 +48,12 @@ export function ActivityPanel({ tx, lastDeposit, lastWithdraw }: Props) {
             {lastWithdrawValue ? `${fromBaseUnits(lastWithdrawValue)} GEN` : "—"}
           </span>
         </div>
+        {lastWithdrawPending !== null && (
+          <div className="log-entry__row">
+            <span className="log-entry__key">pending payout</span>
+            <span className="log-entry__mono">{fromBaseUnits(lastWithdrawPending)} GEN</span>
+          </div>
+        )}
       </div>
 
       <div className="proof">

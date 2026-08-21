@@ -43,6 +43,22 @@ export async function readTotalDeposits(client: GenLayerClient<any>): Promise<bi
   })) as bigint;
 }
 
+export async function readTotalPendingWithdrawals(client: GenLayerClient<any>): Promise<bigint> {
+  return (await client.readContract({
+    address: CONTRACT_ADDRESS,
+    functionName: "get_total_pending_withdrawals",
+    args: [],
+  })) as bigint;
+}
+
+export async function readAllocation(client: GenLayerClient<any>): Promise<any> {
+  return client.readContract({
+    address: CONTRACT_ADDRESS,
+    functionName: "get_allocation",
+    args: [],
+  });
+}
+
 export async function readMyBalance(client: GenLayerClient<any>): Promise<bigint> {
   // get_my_balance() reads gl.message.sender_address on the contract side,
   // so it must be called with a client that has `account` set — otherwise
@@ -50,6 +66,14 @@ export async function readMyBalance(client: GenLayerClient<any>): Promise<bigint
   return (await client.readContract({
     address: CONTRACT_ADDRESS,
     functionName: "get_my_balance",
+    args: [],
+  })) as bigint;
+}
+
+export async function readMyPendingWithdrawal(client: GenLayerClient<any>): Promise<bigint> {
+  return (await client.readContract({
+    address: CONTRACT_ADDRESS,
+    functionName: "get_my_pending_withdrawal",
     args: [],
   })) as bigint;
 }

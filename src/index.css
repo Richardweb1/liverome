@@ -144,7 +144,7 @@ h1 {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-template-columns: 1.15fr 1fr 1fr 1fr;
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -298,6 +298,20 @@ h1 {
   font-size: 13px;
 }
 
+.pending-box {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 10px;
+  background: rgba(251, 191, 36, 0.08);
+  color: var(--yellow);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
 .oracle-readout__headline {
   display: flex;
   align-items: center;
@@ -344,6 +358,33 @@ h1 {
   font-size: 13px;
 }
 .reasoning__prefix { color: var(--soft); }
+
+.allocation-mini {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.allocation-mini div {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.allocation-mini span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--soft);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.allocation-mini strong {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
 
 .tx-status, .log-entry {
   border: 1px solid var(--line);

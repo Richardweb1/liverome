@@ -6,12 +6,13 @@ interface Props {
   connected: boolean;
   myBalance: bigint | null;
   totalDeposits: bigint | null;
+  myPendingWithdrawal: bigint | null;
   tx: TxState;
   onDeposit: (amount: string) => void;
   onWithdraw: (amount: string) => void;
 }
 
-export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit, onWithdraw }: Props) {
+export function VaultPanel({ connected, myBalance, totalDeposits, myPendingWithdrawal, tx, onDeposit, onWithdraw }: Props) {
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
 
@@ -39,6 +40,13 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
           <span className="balance__unit">GEN</span>
         </div>
       </div>
+
+      {myPendingWithdrawal !== null && myPendingWithdrawal > 0n && (
+        <div className="pending-box">
+          <span>Pending payout</span>
+          <strong>{fromBaseUnits(myPendingWithdrawal)} GEN</strong>
+        </div>
+      )}
 
       <div className="vault-form">
         <div className="field">

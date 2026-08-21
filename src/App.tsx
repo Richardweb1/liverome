@@ -9,10 +9,12 @@ import { fromBaseUnits } from "./lib/chain";
 function DashboardStats({
   myBalance,
   totalDeposits,
+  totalPendingWithdrawals,
   strategy,
 }: {
   myBalance: bigint | null;
   totalDeposits: bigint | null;
+  totalPendingWithdrawals: bigint | null;
   strategy: string | null;
 }) {
   return (
@@ -24,6 +26,10 @@ function DashboardStats({
       <div className="stat-card">
         <span>Total vault</span>
         <strong>{totalDeposits !== null ? fromBaseUnits(totalDeposits) : "..." } GEN</strong>
+      </div>
+      <div className="stat-card">
+        <span>Pending payouts</span>
+        <strong>{totalPendingWithdrawals !== null ? fromBaseUnits(totalPendingWithdrawals) : "..." } GEN</strong>
       </div>
       <div className="stat-card">
         <span>Strategy</span>
@@ -60,6 +66,7 @@ export default function App() {
         <DashboardStats
           myBalance={data.myBalance}
           totalDeposits={data.totalDeposits}
+          totalPendingWithdrawals={data.totalPendingWithdrawals}
           strategy={data.strategy}
         />
 
@@ -68,6 +75,7 @@ export default function App() {
             connected={connected}
             myBalance={data.myBalance}
             totalDeposits={data.totalDeposits}
+            myPendingWithdrawal={data.myPendingWithdrawal}
             tx={tx}
             onDeposit={deposit}
             onWithdraw={withdraw}
@@ -76,12 +84,13 @@ export default function App() {
           <OraclePanel
             strategy={data.strategy}
             history={data.history}
+            allocation={data.allocation}
             connected={connected}
             tx={tx}
             onRebalance={rebalance}
           />
 
-          <ActivityPanel tx={tx} lastDeposit={data.lastDeposit} lastWithdraw={data.lastWithdraw} />
+        <ActivityPanel tx={tx} lastDeposit={data.lastDeposit} lastWithdraw={data.lastWithdraw} />
         </div>
       </main>
     </>

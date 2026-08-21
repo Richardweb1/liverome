@@ -3,12 +3,13 @@ import type { TxState } from "../hooks/useLiverome";
 interface Props {
   strategy: string | null;
   history: any[];
+  allocation: any | null;
   connected: boolean;
   tx: TxState;
   onRebalance: () => void;
 }
 
-export function OraclePanel({ strategy, history, connected, tx, onRebalance }: Props) {
+export function OraclePanel({ strategy, history, allocation, connected, tx, onRebalance }: Props) {
   const latest = history?.[0] ?? null;
   const regime = latest?.regime ?? null;
   const confidence = latest?.confidence ?? null;
@@ -50,6 +51,21 @@ export function OraclePanel({ strategy, history, connected, tx, onRebalance }: P
           <span className="reasoning__prefix">reasoning —</span>"{reasoning}"
         </p>
       )}
+
+      <div className="allocation-mini">
+        <div>
+          <span>Growth</span>
+          <strong>{allocation?.growth_bps ?? latest?.growth_bps ?? "4500"} bps</strong>
+        </div>
+        <div>
+          <span>Reserve</span>
+          <strong>{allocation?.reserve_bps ?? latest?.reserve_bps ?? "4000"} bps</strong>
+        </div>
+        <div>
+          <span>Protection</span>
+          <strong>{allocation?.protection_bps ?? latest?.protection_bps ?? "1500"} bps</strong>
+        </div>
+      </div>
 
       <button
         className="btn btn--ghost btn--full"

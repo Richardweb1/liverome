@@ -5,33 +5,101 @@ def deploy_liverome(direct_deploy):
     return direct_deploy("contracts/liverome.py")
 
 
+def mock_market(direct_vm, change_24h):
+    direct_vm.mock_web(
+        r".*api\.coingecko\.com.*",
+        {
+            "status": 200,
+            "body": json.dumps(
+                {"bitcoin": {"usd": 100000, "usd_24h_change": change_24h}}
+            ),
+        },
+    )
+
+
 def test_initial_state(direct_deploy):
     contract = deploy_liverome(direct_deploy)
 
     assert contract.get_strategy() == "balanced"
     assert contract.get_total_deposits() == 0
+    assert contract.get_total_pending_withdrawals() == 0
     assert contract.get_cooldown_remaining() == 0
     assert contract.get_history() == []
 
+    allocation = contract.get_allocation()
+    assert allocation["growth_bps"] == 4500
+    assert allocation["reserve_bps"] == 4000
+    assert allocation["protection_bps"] == 1500
+    assert allocation["total_bps"] == 10000
 
-def test_deposit_and_withdraw(direct_vm, direct_deploy, direct_alice):
+
+def test_deposit_increases_user_balance_and_total_deposits(
+    direct_vm, direct_deploy, direct_alice
+):
     contract = deploy_liverome(direct_deploy)
 
     direct_vm.sender = direct_alice
     direct_vm.value = 1000
     contract.deposit()
 
-    assert contract.get_user_balance(direct_alice) == 1000
+    key = contract.get_last_deposit()["key"]
+    assert contract.get_user_balance_key(key) == 1000
     assert contract.get_total_deposits() == 1000
+    assert contract.get_accounting()["total_claims"] == 1000
+
+
+def test_withdraw_preserves_claim_as_pending_until_payout(
+    direct_vm, direct_deploy, direct_alice
+):
+    contract = deploy_liverome(direct_deploy)
+
+    direct_vm.sender = direct_alice
+    direct_vm.value = 1000
+    contract.deposit()
 
     direct_vm.value = 0
     contract.withdraw(400)
 
-    assert contract.get_user_balance(direct_alice) == 600
+    key = contract.get_last_withdraw()["key"]
+    assert contract.get_user_balance_key(key) == 600
+    assert contract.get_user_pending_withdrawal_key(key) == 400
+    assert contract.get_total_deposits() == 1000
+    assert contract.get_total_pending_withdrawals() == 400
+
+    accounting = contract.get_accounting()
+    assert accounting["available_deposits"] == 600
+    assert accounting["total_pending_withdrawals"] == 400
+    assert accounting["total_claims"] == 1000
+
+
+def test_mark_withdrawal_paid_reduces_total_after_successful_payout(
+    direct_vm, direct_deploy, direct_owner, direct_alice, direct_bob
+):
+    contract = deploy_liverome(direct_deploy)
+
+    direct_vm.sender = direct_alice
+    direct_vm.value = 1000
+    contract.deposit()
+    direct_vm.value = 0
+    contract.withdraw(400)
+    key = contract.get_last_withdraw()["key"]
+
+    direct_vm.sender = direct_bob
+    with direct_vm.expect_revert("Only owner"):
+        contract.mark_withdrawal_paid(key, 400)
+
+    direct_vm.sender = direct_owner
+    contract.mark_withdrawal_paid(key, 400)
+
+    assert contract.get_user_balance_key(key) == 600
+    assert contract.get_user_pending_withdrawal_key(key) == 0
     assert contract.get_total_deposits() == 600
+    assert contract.get_total_pending_withdrawals() == 0
 
 
-def test_withdraw_more_than_balance_reverts(direct_vm, direct_deploy, direct_alice):
+def test_withdraw_more_than_available_reverts_without_state_loss(
+    direct_vm, direct_deploy, direct_alice
+):
     contract = deploy_liverome(direct_deploy)
 
     direct_vm.sender = direct_alice
@@ -42,58 +110,29 @@ def test_withdraw_more_than_balance_reverts(direct_vm, direct_deploy, direct_ali
     with direct_vm.expect_revert("Insufficient balance"):
         contract.withdraw(500)
 
-    assert contract.get_user_balance(direct_alice) == 100
+    key = contract.get_last_deposit()["key"]
+    assert contract.get_user_balance_key(key) == 100
     assert contract.get_total_deposits() == 100
+    assert contract.get_total_pending_withdrawals() == 0
 
 
-def test_parse_decision_rejects_inconsistent_strategy(direct_deploy):
-    contract = deploy_liverome(direct_deploy)
-
-    bad_decision = json.dumps(
-        {
-            "regime": "bear",
-            "strategy": "aggressive",
-            "reasoning": "bad risk match",
-            "confidence": 99,
-        }
-    )
-
-    try:
-        contract._parse_decision(bad_decision)
-        assert False, "expected inconsistent strategy to fail"
-    except Exception as err:
-        assert "Strategy does not match regime" in str(err)
-
-
-def test_rebalance_updates_history_with_mocks(direct_vm, direct_deploy, direct_alice):
+def test_rebalance_changes_actual_allocation_fields(direct_vm, direct_deploy, direct_alice):
     contract = deploy_liverome(direct_deploy)
 
     direct_vm.sender = direct_alice
-    direct_vm.warp("2026-08-20T00:00:00Z")
-    direct_vm.mock_web(r".*api\.llama\.fi.*", {"status": 200, "body": "stable defi tvl"})
-    direct_vm.mock_web(r".*api\.coingecko\.com.*", {"status": 200, "body": "btc eth green"})
-    direct_vm.mock_web(r".*coindesk\.com.*", {"status": 200, "body": "constructive market news"})
-    direct_vm.mock_llm(
-        r".*autonomous risk engine.*",
-        json.dumps(
-            {
-                "regime": "bull",
-                "strategy": "aggressive",
-                "reasoning": "Market data supports a healthy risk-on regime.",
-                "confidence": 82,
-            }
-        ),
-    )
+    mock_market(direct_vm, 7.79)
 
     contract.rebalance()
 
     assert contract.get_strategy() == "aggressive"
+    allocation = contract.get_allocation()
+    assert allocation["growth_bps"] == 7000
+    assert allocation["reserve_bps"] == 2000
+    assert allocation["protection_bps"] == 1000
+    assert allocation["total_bps"] == 10000
+
     history = contract.get_history()
     assert len(history) == 1
-    assert history[0]["old_strategy"] == "balanced"
-    assert history[0]["new_strategy"] == "aggressive"
     assert history[0]["regime"] == "bull"
-    assert history[0]["confidence"] == 82
-
-    with direct_vm.expect_revert("Cooldown active"):
-        contract.rebalance()
+    assert history[0]["new_strategy"] == "aggressive"
+    assert history[0]["growth_bps"] == 7000

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Hash } from "genlayer-js/types";
-import { getClient, readHistory, readLastDeposit, readLastWithdraw, readMyBalance, readStrategy, readTotalDeposits, writeDeposit, writeRebalance, writeWithdraw } from "../lib/contract";
+import { getClient, readAllocation, readHistory, readLastDeposit, readLastWithdraw, readMyBalance, readMyPendingWithdrawal, readStrategy, readTotalDeposits, readTotalPendingWithdrawals, writeDeposit, writeRebalance, writeWithdraw } from "../lib/contract";
 import { toBaseUnits } from "../lib/chain";
 
 export type TxStatus = "idle" | "pending" | "accepted" | "finalized" | "error";
@@ -16,7 +16,10 @@ export interface LiveromeData {
   strategy: string | null;
   history: any[];
   totalDeposits: bigint | null;
+  totalPendingWithdrawals: bigint | null;
   myBalance: bigint | null;
+  myPendingWithdrawal: bigint | null;
+  allocation: any | null;
   lastDeposit: any | null;
   lastWithdraw: any | null;
 }
@@ -25,7 +28,10 @@ const EMPTY_DATA: LiveromeData = {
   strategy: null,
   history: [],
   totalDeposits: null,
+  totalPendingWithdrawals: null,
   myBalance: null,
+  myPendingWithdrawal: null,
+  allocation: null,
   lastDeposit: null,
   lastWithdraw: null,
 };
@@ -52,12 +58,41 @@ export function useLiverome(address: string | null) {
         readLastWithdraw(readClient),
       ]);
 
-      let myBalance: bigint | null = null;
-      if (address && writeClient) {
-        myBalance = await readMyBalance(writeClient);
+      let totalPendingWithdrawals: bigint | null = null;
+      let allocation: any | null = null;
+      try {
+        totalPendingWithdrawals = await readTotalPendingWithdrawals(readClient);
+      } catch {
+        totalPendingWithdrawals = 0n;
+      }
+      try {
+        allocation = await readAllocation(readClient);
+      } catch {
+        allocation = null;
       }
 
-      setData({ strategy, history, totalDeposits, myBalance, lastDeposit, lastWithdraw });
+      let myBalance: bigint | null = null;
+      let myPendingWithdrawal: bigint | null = null;
+      if (address && writeClient) {
+        myBalance = await readMyBalance(writeClient);
+        try {
+          myPendingWithdrawal = await readMyPendingWithdrawal(writeClient);
+        } catch {
+          myPendingWithdrawal = 0n;
+        }
+      }
+
+      setData({
+        strategy,
+        history,
+        totalDeposits,
+        totalPendingWithdrawals,
+        myBalance,
+        myPendingWithdrawal,
+        allocation,
+        lastDeposit,
+        lastWithdraw,
+      });
     } catch (err) {
       console.error("Liverome read failed:", err);
     } finally {

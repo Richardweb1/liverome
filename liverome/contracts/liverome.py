@@ -3,27 +3,35 @@
 from genlayer import *
 import json
 
-STRATEGIES = ("conservative", "balanced", "aggressive")
-REGIMES = ("bull", "bear", "sideways", "high_volatility")
-
 ERROR_EXPECTED = "[EXPECTED]"
 ERROR_EXTERNAL = "[EXTERNAL]"
 ERROR_TRANSIENT = "[TRANSIENT]"
+
 COINGECKO_URL = (
     "https://api.coingecko.com/api/v3/simple/price"
     "?ids=bitcoin&vs_currencies=usd&include_24hr_change=true"
 )
 
+BPS_TOTAL = u256(10000)
+
 
 class Liverome(gl.Contract):
+    owner: Address
+
     total_deposits: u256
+    total_pending_withdrawals: u256
     balances: TreeMap[str, u256]
+    pending_withdrawals: TreeMap[str, u256]
 
     current_strategy: str
     last_rebalance_regime: str
     last_rebalance_reasoning: str
     last_rebalance_confidence: u256
     rebalance_count: u256
+
+    growth_allocation_bps: u256
+    reserve_allocation_bps: u256
+    protection_allocation_bps: u256
 
     last_deposit_sender: Address
     last_deposit_key: str
@@ -35,18 +43,24 @@ class Liverome(gl.Contract):
     last_withdraw_key: str
     last_withdraw_amount: u256
     last_withdraw_balance: u256
+    last_withdraw_pending: u256
     withdraw_count: u256
 
     def __init__(self):
         sender = gl.message.sender_address
         key = str(sender)
 
+        self.owner = sender
+
         self.total_deposits = u256(0)
+        self.total_pending_withdrawals = u256(0)
+
         self.current_strategy = "balanced"
         self.last_rebalance_regime = "sideways"
         self.last_rebalance_reasoning = "Initial state."
         self.last_rebalance_confidence = u256(0)
         self.rebalance_count = u256(0)
+        self._apply_strategy_allocation("balanced")
 
         self.last_deposit_sender = sender
         self.last_deposit_key = key
@@ -58,6 +72,7 @@ class Liverome(gl.Contract):
         self.last_withdraw_key = key
         self.last_withdraw_amount = u256(0)
         self.last_withdraw_balance = u256(0)
+        self.last_withdraw_pending = u256(0)
         self.withdraw_count = u256(0)
 
     @gl.public.write.payable
@@ -91,22 +106,45 @@ class Liverome(gl.Contract):
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Insufficient balance")
 
         new_balance = current - amount
+        current_pending = self.pending_withdrawals.get(key, u256(0))
+        new_pending = current_pending + amount
+
         self.balances[key] = new_balance
-        self.total_deposits = self.total_deposits - amount
+        self.pending_withdrawals[key] = new_pending
+        self.total_pending_withdrawals = self.total_pending_withdrawals + amount
+
         self.last_withdraw_sender = sender
         self.last_withdraw_key = key
         self.last_withdraw_amount = amount
         self.last_withdraw_balance = new_balance
+        self.last_withdraw_pending = new_pending
         self.withdraw_count = self.withdraw_count + u256(1)
+
+    @gl.public.write
+    def mark_withdrawal_paid(self, user: str, amount: u256) -> None:
+        if gl.message.sender_address != self.owner:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Only owner can mark payouts")
+        if amount <= u256(0):
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Payout amount must be greater than zero")
+
+        pending = self.pending_withdrawals.get(user, u256(0))
+        if amount > pending:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Pending withdrawal is too small")
+
+        self.pending_withdrawals[user] = pending - amount
+        self.total_pending_withdrawals = self.total_pending_withdrawals - amount
+        self.total_deposits = self.total_deposits - amount
 
     @gl.public.write
     def rebalance(self) -> None:
         decision = self._consensus_market_decision()
+        strategy = str(decision["strategy"])
 
-        self.current_strategy = str(decision["strategy"])
+        self.current_strategy = strategy
         self.last_rebalance_regime = str(decision["regime"])
         self.last_rebalance_reasoning = str(decision["reasoning"])[:300]
         self.last_rebalance_confidence = u256(int(decision["confidence"]))
+        self._apply_strategy_allocation(strategy)
         self.rebalance_count = self.rebalance_count + u256(1)
 
     @gl.public.view
@@ -114,7 +152,24 @@ class Liverome(gl.Contract):
         return self.current_strategy
 
     @gl.public.view
+    def get_allocation(self) -> dict:
+        return {
+            "strategy": self.current_strategy,
+            "growth_bps": int(self.growth_allocation_bps),
+            "reserve_bps": int(self.reserve_allocation_bps),
+            "protection_bps": int(self.protection_allocation_bps),
+            "total_bps": int(
+                self.growth_allocation_bps
+                + self.reserve_allocation_bps
+                + self.protection_allocation_bps
+            ),
+        }
+
+    @gl.public.view
     def get_history(self) -> list[dict]:
+        if self.rebalance_count == u256(0):
+            return []
+        allocation = self.get_allocation()
         return [
             {
                 "strategy": self.current_strategy,
@@ -124,6 +179,9 @@ class Liverome(gl.Contract):
                 "reasoning": self.last_rebalance_reasoning,
                 "confidence": int(self.last_rebalance_confidence),
                 "rebalance_count": int(self.rebalance_count),
+                "growth_bps": allocation["growth_bps"],
+                "reserve_bps": allocation["reserve_bps"],
+                "protection_bps": allocation["protection_bps"],
                 "timestamp": str(int(self.rebalance_count)),
             }
         ]
@@ -137,8 +195,25 @@ class Liverome(gl.Contract):
         return self.balances.get(user, u256(0))
 
     @gl.public.view
+    def get_user_pending_withdrawal_key(self, user: str) -> u256:
+        return self.pending_withdrawals.get(user, u256(0))
+
+    @gl.public.view
     def get_my_balance(self) -> u256:
         return self.balances.get(str(gl.message.sender_address), u256(0))
+
+    @gl.public.view
+    def get_my_pending_withdrawal(self) -> u256:
+        return self.pending_withdrawals.get(str(gl.message.sender_address), u256(0))
+
+    @gl.public.view
+    def get_accounting(self) -> dict:
+        return {
+            "available_deposits": int(self.total_deposits - self.total_pending_withdrawals),
+            "total_deposits": int(self.total_deposits),
+            "total_pending_withdrawals": int(self.total_pending_withdrawals),
+            "total_claims": int(self.total_deposits),
+        }
 
     @gl.public.view
     def get_last_deposit_balance(self) -> u256:
@@ -161,6 +236,7 @@ class Liverome(gl.Contract):
             "key": self.last_withdraw_key,
             "amount": int(self.last_withdraw_amount),
             "balance": int(self.last_withdraw_balance),
+            "pending": int(self.last_withdraw_pending),
             "count": int(self.withdraw_count),
         }
 
@@ -169,8 +245,33 @@ class Liverome(gl.Contract):
         return self.total_deposits
 
     @gl.public.view
+    def get_total_pending_withdrawals(self) -> u256:
+        return self.total_pending_withdrawals
+
+    @gl.public.view
     def get_cooldown_remaining(self) -> u256:
         return u256(0)
+
+    def _apply_strategy_allocation(self, strategy: str) -> None:
+        if strategy == "aggressive":
+            self.growth_allocation_bps = u256(7000)
+            self.reserve_allocation_bps = u256(2000)
+            self.protection_allocation_bps = u256(1000)
+        elif strategy == "conservative":
+            self.growth_allocation_bps = u256(2500)
+            self.reserve_allocation_bps = u256(5500)
+            self.protection_allocation_bps = u256(2000)
+        else:
+            self.growth_allocation_bps = u256(4500)
+            self.reserve_allocation_bps = u256(4000)
+            self.protection_allocation_bps = u256(1500)
+
+        if (
+            self.growth_allocation_bps
+            + self.reserve_allocation_bps
+            + self.protection_allocation_bps
+        ) != BPS_TOTAL:
+            raise gl.vm.UserError(f"{ERROR_EXPECTED} Invalid allocation")
 
     def _leader_market_decision(self) -> dict:
         response = gl.nondet.web.get(COINGECKO_URL)
@@ -197,34 +298,29 @@ class Liverome(gl.Contract):
             regime = "high_volatility"
             strategy = "conservative"
             confidence = 90
+            reasoning = "BTC 24h change is above 8% absolute, so the vault moves defensive."
         elif change_int > 2:
             regime = "bull"
             strategy = "aggressive"
             confidence = 75
+            reasoning = "BTC 24h change is above 2%, so the vault increases growth allocation."
         elif change_int < -2:
             regime = "bear"
             strategy = "conservative"
             confidence = 75
+            reasoning = "BTC 24h change is below -2%, so the vault prioritizes reserves."
         else:
             regime = "sideways"
             strategy = "balanced"
             confidence = 70
+            reasoning = "BTC 24h change is within +/-2%, so the vault stays balanced."
 
         return {
             "regime": regime,
             "strategy": strategy,
-            "reasoning": "Deterministic CoinGecko BTC 24h change classifier.",
+            "reasoning": reasoning,
             "confidence": confidence,
         }
 
     def _consensus_market_decision(self) -> dict:
         return gl.eq_principle.strict_eq(self._leader_market_decision)
-
-    def _strategy_matches_regime(self, strategy: str, regime: str) -> bool:
-        if regime == "bull":
-            return strategy in ("balanced", "aggressive")
-        if regime == "sideways":
-            return strategy == "balanced"
-        if regime == "bear" or regime == "high_volatility":
-            return strategy == "conservative"
-        return False

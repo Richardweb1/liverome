@@ -35,12 +35,14 @@ https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8
 
 - Wallet connection in the web app
 - `deposit()` payable transaction
-- `withdraw(amount)` internal-accounting transaction
+- `withdraw(amount)` creates a pending payout claim without deleting the user's right to funds
 - `rebalance()` strategy optimization transaction
 - User vault balance
 - Total vault deposits
 - Current strategy
 - Latest oracle decision
+- Real allocation fields: growth, reserve, and protection basis points
+- Pending withdrawal accounting
 - Transaction status flow: pending, accepted, finalized, error
 
 ## How The Strategy Works
@@ -56,6 +58,12 @@ The contract classifies the market:
 
 Validators must agree on the deterministic result through `gl.eq_principle.strict_eq` before the strategy is stored on-chain.
 
+The accepted strategy also updates persisted vault allocation fields:
+
+- `aggressive`: 7000 growth / 2000 reserve / 1000 protection bps
+- `balanced`: 4500 growth / 4000 reserve / 1500 protection bps
+- `conservative`: 2500 growth / 5500 reserve / 2000 protection bps
+
 ## Current Status
 
 This is a working Bradbury testnet prototype. It demonstrates:
@@ -65,7 +73,7 @@ This is a working Bradbury testnet prototype. It demonstrates:
 - on-chain strategy updates
 - a real React dApp frontend connected to the deployed contract
 
-It is not a production yield product yet. Withdraw currently updates internal accounting only and does not transfer native GEN back to the wallet.
+It is not a production yield product yet. The current withdrawal model is claim-based: `withdraw(amount)` moves the amount into `pending_withdrawals` so the user's claim is preserved until a payout is marked as paid. This avoids erasing a user's claim if native payout support is unavailable or fails.
 
 ## Tech Stack
 
@@ -122,6 +130,7 @@ Write methods:
 
 - `deposit()` payable
 - `withdraw(amount: u256)`
+- `mark_withdrawal_paid(user: str, amount: u256)`
 - `rebalance()`
 
 Read methods:
@@ -129,7 +138,11 @@ Read methods:
 - `get_strategy()`
 - `get_history()`
 - `get_total_deposits()`
+- `get_total_pending_withdrawals()`
+- `get_accounting()`
+- `get_allocation()`
 - `get_my_balance()`
+- `get_my_pending_withdrawal()`
 - `get_last_deposit()`
 - `get_last_withdraw()`
 - `get_user_balance_key(user: str)`
