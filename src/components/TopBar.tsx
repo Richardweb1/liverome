@@ -19,6 +19,7 @@ export function TopBar({ address, isConnecting, isAvailable, error, onConnect }:
         <div className="brand">
           <span className="brand__dot" />
           <span className="brand__name">LIVEROME</span>
+          <span className="brand__sub">Adaptive Yield</span>
         </div>
 
         <div className="topbar__right">

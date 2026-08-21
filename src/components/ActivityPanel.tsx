@@ -22,7 +22,7 @@ export function ActivityPanel({ tx, lastDeposit, lastWithdraw }: Props) {
   return (
     <section className="panel panel--activity">
       <div className="panel__eyebrow">
-        <span>ACTIVITY</span>
+        <span>VAULT ACTIVITY</span>
       </div>
 
       {tx.status !== "idle" && (

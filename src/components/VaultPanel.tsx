@@ -20,8 +20,8 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
   return (
     <section className="panel panel--vault">
       <div className="panel__eyebrow">
-        <span>VAULT</span>
-        <span className="badge badge--verified">On-chain</span>
+        <span>MY VAULT</span>
+        <span className="badge badge--verified">Live account</span>
       </div>
 
       <div className="balance">
@@ -89,7 +89,7 @@ export function VaultPanel({ connected, myBalance, totalDeposits, tx, onDeposit,
       </div>
 
       {!connected && (
-        <p className="vault-note">Connect a wallet to deposit, withdraw, or see your balance.</p>
+        <p className="vault-note">Connect your wallet to activate the vault controls and read your personal position.</p>
       )}
     </section>
   );
