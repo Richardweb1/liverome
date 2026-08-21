@@ -7,13 +7,13 @@ Users can deposit native GEN, request withdrawals, and trigger a live market reb
 ## Current Bradbury Contract
 
 ```text
-0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
+0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 ```
 
 Explorer:
 
 ```text
-https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
+https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 ```
 
 ## What Works

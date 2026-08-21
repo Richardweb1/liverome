@@ -14,7 +14,7 @@ import { testnetBradbury } from "genlayer-js/chains";
 export const CHAIN = testnetBradbury;
 
 export const CONTRACT_ADDRESS =
-  "0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613" as const;
+  "0x2c9d37F4A84204Fa46112A239665C292E6cDffC5" as const;
 
 // GEN token decimals — GenLayer's native token follows the standard EVM
 // 18-decimal convention for ghost-contract value transfers. Verify this

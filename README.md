@@ -7,8 +7,8 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 ## Live Demo
 
 - App: https://liverome.vercel.app
-- Bradbury contract: `0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613`
-- Explorer: https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
+- Bradbury contract: `0x2c9d37F4A84204Fa46112A239665C292E6cDffC5`
+- Explorer: https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 - Contract source: [`contracts/liverome.py`](contracts/liverome.py)
 
 ## Deployed Contract
@@ -16,7 +16,7 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 The Liverome intelligent contract is deployed on GenLayer Bradbury testnet.
 
 ```text
-0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
+0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 ```
 
 Source code:
@@ -28,7 +28,7 @@ contracts/liverome.py
 Explorer:
 
 ```text
-https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
+https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 ```
 
 ## What Works Now
