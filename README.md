@@ -7,8 +7,8 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 ## Live Demo
 
 - App: https://liverome.vercel.app
-- Bradbury contract: `0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd`
-- Explorer: https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd
+- Bradbury contract: `0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613`
+- Explorer: https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
 - Contract source: [`contracts/liverome.py`](contracts/liverome.py)
 
 ## Deployed Contract
@@ -16,7 +16,7 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 The Liverome intelligent contract is deployed on GenLayer Bradbury testnet.
 
 ```text
-0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd
+0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
 ```
 
 Source code:
@@ -28,7 +28,7 @@ contracts/liverome.py
 Explorer:
 
 ```text
-https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd
+https://explorer-bradbury.genlayer.com/address/0xc5DFC170c8bc55EF31C1E68fAA5e4a49ec8E7613
 ```
 
 ## What Works Now
@@ -153,3 +153,4 @@ Read methods:
 - The frontend uses wallet connection and `genlayer-js` for contract reads/writes.
 - The current contract uses deterministic oracle classification for Bradbury reliability.
 - Earlier LLM-based oracle tests were avoided in the hot path because they caused validator timeouts.
+
