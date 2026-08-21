@@ -10,7 +10,7 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 - Repository: https://github.com/Richardweb1/liverome
 - Bradbury contract: `0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd`
 - Explorer: https://explorer-bradbury.genlayer.com/address/0x579b3587C27DfeA3Ad8AC500B1E0Bd8e19F211Fd
-- Contract source: [`liverome/contracts/liverome.py`](liverome/contracts/liverome.py)
+- Contract source: [`contracts/liverome.py`](contracts/liverome.py)
 
 ## Deployed Contract
 
@@ -23,7 +23,7 @@ The Liverome intelligent contract is deployed on GenLayer Bradbury testnet.
 Source code:
 
 ```text
-liverome/contracts/liverome.py
+contracts/liverome.py
 ```
 
 Explorer:
@@ -82,12 +82,14 @@ It is not a production yield product yet. Withdraw currently updates internal ac
 
 ```text
 .
+├── contracts/
+│   └── liverome.py            # GenLayer intelligent contract
 ├── src/                       # React dApp frontend
 │   ├── components/
 │   ├── hooks/
 │   └── lib/
 ├── liverome/
-│   ├── contracts/liverome.py  # GenLayer intelligent contract
+│   ├── contracts/liverome.py  # Original contract workspace copy
 │   ├── deploy/
 │   └── test/
 ├── package.json
