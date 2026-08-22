@@ -164,7 +164,7 @@ export function ActivityPanel({
               <strong>{shortHash(tx.hash)}</strong>
             </div>
             <a
-              href={`https://explorer-bradbury.genlayer.com/transactions/${tx.hash}`}
+              href={`https://explorer-bradbury.genlayer.com/tx/${tx.hash}`}
               target="_blank"
               rel="noopener"
               className="btn btn--tiny explorer-card__button"
