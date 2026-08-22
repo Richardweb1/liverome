@@ -501,6 +501,38 @@ h1 {
   flex-direction: column;
   gap: 8px;
 }
+
+.explorer-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 6px;
+  padding: 13px 14px;
+  border: 1px solid rgba(124, 156, 255, 0.3);
+  border-radius: 10px;
+  background: rgba(124, 156, 255, 0.08);
+}
+
+.explorer-card__label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--soft);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.explorer-card strong {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.explorer-card__button {
+  min-width: 150px;
+  text-align: center;
+  text-decoration: none;
+}
 .proof__row {
   color: var(--soft);
   font-size: 13px;
@@ -545,6 +577,13 @@ h1 {
   }
   .proof-grid {
     grid-template-columns: 1fr;
+  }
+  .explorer-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .explorer-card__button {
+    width: 100%;
   }
 }
 

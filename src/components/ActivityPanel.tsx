@@ -21,6 +21,10 @@ const STATUS_LABEL: Record<string, string> = {
   error: "Error",
 };
 
+function shortHash(hash: string): string {
+  return `${hash.slice(0, 10)}...${hash.slice(-6)}`;
+}
+
 function valueToBigInt(value: unknown): bigint {
   if (typeof value === "bigint") return value;
   if (typeof value === "number") return BigInt(value);
@@ -153,6 +157,22 @@ export function ActivityPanel({
       </div>
 
       <div className="proof">
+        {tx.hash && (
+          <div className="explorer-card">
+            <div>
+              <span className="explorer-card__label">Latest transaction</span>
+              <strong>{shortHash(tx.hash)}</strong>
+            </div>
+            <a
+              href={`https://explorer-bradbury.genlayer.com/transactions/${tx.hash}`}
+              target="_blank"
+              rel="noopener"
+              className="btn btn--tiny explorer-card__button"
+            >
+              Open transaction
+            </a>
+          </div>
+        )}
         <div className="proof__row">
           <span>Contract</span>
           <a
