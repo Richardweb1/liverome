@@ -16,12 +16,15 @@ BPS_TOTAL = u256(10000)
 
 
 class Liverome(gl.Contract):
-    owner: Address
-
     total_deposits: u256
     total_pending_withdrawals: u256
+    settled_withdrawals_total: u256
     balances: TreeMap[str, u256]
     pending_withdrawals: TreeMap[str, u256]
+    queue_user: TreeMap[str, str]
+    queue_amount: TreeMap[str, u256]
+    queue_head_index: u256
+    queue_next_index: u256
 
     current_strategy: str
     last_rebalance_regime: str
@@ -32,6 +35,9 @@ class Liverome(gl.Contract):
     growth_allocation_bps: u256
     reserve_allocation_bps: u256
     protection_allocation_bps: u256
+    growth_balance: u256
+    reserve_balance: u256
+    protection_balance: u256
 
     last_deposit_sender: Address
     last_deposit_key: str
@@ -47,16 +53,18 @@ class Liverome(gl.Contract):
     last_payout_requested_sender: Address
     last_payout_requested_amount: u256
     payout_request_count: u256
+    last_confirmed_settlement: u256
     withdraw_count: u256
 
     def __init__(self):
         sender = gl.message.sender_address
         key = str(sender)
 
-        self.owner = sender
-
         self.total_deposits = u256(0)
         self.total_pending_withdrawals = u256(0)
+        self.settled_withdrawals_total = u256(0)
+        self.queue_head_index = u256(0)
+        self.queue_next_index = u256(0)
 
         self.current_strategy = "balanced"
         self.last_rebalance_regime = "sideways"
@@ -64,6 +72,7 @@ class Liverome(gl.Contract):
         self.last_rebalance_confidence = u256(0)
         self.rebalance_count = u256(0)
         self._apply_strategy_allocation("balanced")
+        self._recompute_buckets()
 
         self.last_deposit_sender = sender
         self.last_deposit_key = key
@@ -79,6 +88,7 @@ class Liverome(gl.Contract):
         self.last_payout_requested_sender = sender
         self.last_payout_requested_amount = u256(0)
         self.payout_request_count = u256(0)
+        self.last_confirmed_settlement = u256(0)
         self.withdraw_count = u256(0)
 
     @gl.public.write.payable
@@ -116,8 +126,15 @@ class Liverome(gl.Contract):
         new_pending = current_pending + amount
 
         self.balances[key] = new_balance
+        self.total_deposits = self.total_deposits - amount
         self.pending_withdrawals[key] = new_pending
         self.total_pending_withdrawals = self.total_pending_withdrawals + amount
+
+        slot = str(self.queue_next_index)
+        self.queue_user[slot] = key
+        self.queue_amount[slot] = amount
+        self.queue_next_index = self.queue_next_index + u256(1)
+
         gl.get_contract_at(sender).emit_transfer(value=amount, on="finalized")
 
         self.last_withdraw_sender = sender
@@ -131,19 +148,44 @@ class Liverome(gl.Contract):
         self.withdraw_count = self.withdraw_count + u256(1)
 
     @gl.public.write
-    def mark_withdrawal_paid(self, user: str, amount: u256) -> None:
-        if gl.message.sender_address != self.owner:
-            raise gl.vm.UserError(f"{ERROR_EXPECTED} Only owner can mark payouts")
-        if amount <= u256(0):
-            raise gl.vm.UserError(f"{ERROR_EXPECTED} Payout amount must be greater than zero")
+    def confirm_settlements(self) -> u256:
+        expected = self.total_deposits + self.total_pending_withdrawals
+        actual = self.balance
+        if actual >= expected:
+            self.last_confirmed_settlement = u256(0)
+            return u256(0)
 
-        pending = self.pending_withdrawals.get(user, u256(0))
-        if amount > pending:
-            raise gl.vm.UserError(f"{ERROR_EXPECTED} Pending withdrawal is too small")
+        remaining = expected - actual
+        confirmed = u256(0)
+        idx = self.queue_head_index
 
-        self.pending_withdrawals[user] = pending - amount
-        self.total_pending_withdrawals = self.total_pending_withdrawals - amount
-        self.total_deposits = self.total_deposits - amount
+        while remaining > u256(0) and idx < self.queue_next_index:
+            slot = str(idx)
+            owed = self.queue_amount.get(slot, u256(0))
+            if owed == u256(0):
+                idx = idx + u256(1)
+                continue
+
+            user = self.queue_user[slot]
+            if owed <= remaining:
+                self.pending_withdrawals[user] = self.pending_withdrawals.get(user, u256(0)) - owed
+                self.total_pending_withdrawals = self.total_pending_withdrawals - owed
+                self.settled_withdrawals_total = self.settled_withdrawals_total + owed
+                self.queue_amount[slot] = u256(0)
+                confirmed = confirmed + owed
+                remaining = remaining - owed
+                idx = idx + u256(1)
+            else:
+                self.pending_withdrawals[user] = self.pending_withdrawals.get(user, u256(0)) - remaining
+                self.total_pending_withdrawals = self.total_pending_withdrawals - remaining
+                self.settled_withdrawals_total = self.settled_withdrawals_total + remaining
+                self.queue_amount[slot] = owed - remaining
+                confirmed = confirmed + remaining
+                remaining = u256(0)
+
+        self.queue_head_index = idx
+        self.last_confirmed_settlement = confirmed
+        return confirmed
 
     @gl.public.write
     def rebalance(self) -> None:
@@ -155,6 +197,7 @@ class Liverome(gl.Contract):
         self.last_rebalance_reasoning = str(decision["reasoning"])[:300]
         self.last_rebalance_confidence = u256(int(decision["confidence"]))
         self._apply_strategy_allocation(strategy)
+        self._recompute_buckets()
         self.rebalance_count = self.rebalance_count + u256(1)
 
     @gl.public.view
@@ -168,6 +211,9 @@ class Liverome(gl.Contract):
             "growth_bps": int(self.growth_allocation_bps),
             "reserve_bps": int(self.reserve_allocation_bps),
             "protection_bps": int(self.protection_allocation_bps),
+            "growth_balance": int(self.growth_balance),
+            "reserve_balance": int(self.reserve_balance),
+            "protection_balance": int(self.protection_balance),
             "total_bps": int(
                 self.growth_allocation_bps
                 + self.reserve_allocation_bps
@@ -192,6 +238,9 @@ class Liverome(gl.Contract):
                 "growth_bps": allocation["growth_bps"],
                 "reserve_bps": allocation["reserve_bps"],
                 "protection_bps": allocation["protection_bps"],
+                "growth_balance": allocation["growth_balance"],
+                "reserve_balance": allocation["reserve_balance"],
+                "protection_balance": allocation["protection_balance"],
                 "timestamp": str(int(self.rebalance_count)),
             }
         ]
@@ -209,6 +258,10 @@ class Liverome(gl.Contract):
         return self.pending_withdrawals.get(user, u256(0))
 
     @gl.public.view
+    def get_pending_withdrawal(self, user: str) -> u256:
+        return self.pending_withdrawals.get(user, u256(0))
+
+    @gl.public.view
     def get_my_balance(self) -> u256:
         return self.balances.get(str(gl.message.sender_address), u256(0))
 
@@ -218,12 +271,44 @@ class Liverome(gl.Contract):
 
     @gl.public.view
     def get_accounting(self) -> dict:
+        expected = self.total_deposits + self.total_pending_withdrawals
+        actual = self.balance
         return {
-            "available_deposits": int(self.total_deposits - self.total_pending_withdrawals),
+            "available_deposits": int(self.total_deposits),
             "total_deposits": int(self.total_deposits),
             "total_pending_withdrawals": int(self.total_pending_withdrawals),
-            "total_claims": int(self.total_deposits),
+            "settled_withdrawals_total": int(self.settled_withdrawals_total),
+            "contract_native_balance": int(actual),
+            "expected_liability": int(expected),
+            "unconfirmed_shortfall": int(expected - actual) if expected > actual else 0,
+            "total_claims": int(expected),
         }
+
+    @gl.public.view
+    def get_expected_vs_actual(self) -> dict:
+        expected = self.total_deposits + self.total_pending_withdrawals
+        actual = self.balance
+        return {
+            "expected": int(expected),
+            "actual": int(actual),
+            "unconfirmed_shortfall": int(expected - actual) if expected > actual else 0,
+        }
+
+    @gl.public.view
+    def get_queue_status(self) -> dict:
+        return {
+            "head_index": int(self.queue_head_index),
+            "next_index": int(self.queue_next_index),
+            "unresolved_entries": int(self.queue_next_index - self.queue_head_index),
+        }
+
+    @gl.public.view
+    def get_contract_native_balance(self) -> u256:
+        return self.balance
+
+    @gl.public.view
+    def get_settled_withdrawals_total(self) -> u256:
+        return self.settled_withdrawals_total
 
     @gl.public.view
     def get_last_deposit_balance(self) -> u256:
@@ -250,6 +335,7 @@ class Liverome(gl.Contract):
             "payout_requested_to": str(self.last_payout_requested_sender),
             "payout_requested_amount": int(self.last_payout_requested_amount),
             "payout_request_count": int(self.payout_request_count),
+            "last_confirmed_settlement": int(self.last_confirmed_settlement),
             "count": int(self.withdraw_count),
         }
 
@@ -285,6 +371,15 @@ class Liverome(gl.Contract):
             + self.protection_allocation_bps
         ) != BPS_TOTAL:
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Invalid allocation")
+
+    def _recompute_buckets(self) -> None:
+        total = self.total_deposits
+        growth = (total * self.growth_allocation_bps) // BPS_TOTAL
+        reserve = (total * self.reserve_allocation_bps) // BPS_TOTAL
+        protection = total - growth - reserve
+        self.growth_balance = growth
+        self.reserve_balance = reserve
+        self.protection_balance = protection
 
     def _leader_market_decision(self) -> dict:
         response = gl.nondet.web.get(COINGECKO_URL)

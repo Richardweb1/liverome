@@ -7,16 +7,16 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 ## Live Demo
 
 - App: https://liverome.vercel.app
-- Bradbury contract: `0x2c9d37F4A84204Fa46112A239665C292E6cDffC5`
-- Explorer: https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+- Bradbury contract: pending redeploy for the async-settlement build
+- Previous explorer: https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
 - Contract source: [`contracts/liverome.py`](contracts/liverome.py)
 
 ## Deployed Contract
 
-The Liverome intelligent contract is deployed on GenLayer Bradbury testnet.
+The current repository source contains the async-settlement build. Deploy a new Bradbury instance from `contracts/liverome.py`, then update the app contract address.
 
 ```text
-0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+pending new Bradbury address
 ```
 
 Source code:
@@ -28,7 +28,7 @@ contracts/liverome.py
 Explorer:
 
 ```text
-https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+pending new Bradbury explorer link
 ```
 
 ## What Works Now
@@ -36,7 +36,7 @@ https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C29
 - Wallet connection in the web app
 - `deposit()` payable transaction
 - `withdraw(amount)` requests a native GEN payout with `emit_transfer(..., on="finalized")`
-- Pending withdrawal claims remain recorded until a payout is marked paid
+- Pending claims are reconciled only by permissionless `confirm_settlements()`
 - `rebalance()` strategy optimization transaction
 - User vault balance
 - Total vault deposits
@@ -74,7 +74,7 @@ This is a working Bradbury testnet prototype. It demonstrates:
 - on-chain strategy updates
 - a real React dApp frontend connected to the deployed contract
 
-It is not a production yield product yet. The current withdrawal model requests a native GEN transfer on finalization and keeps a pending claim in storage until the payout is explicitly marked paid. This means the user's claim is not erased if an asynchronous payout message fails or needs manual review.
+It is not a production yield product yet. GenLayer does not currently document a contract-readable per-transfer receipt for individual `emit_transfer` calls. Liverome therefore uses the strongest documented on-chain proof available: a later, permissionless `confirm_settlements()` call compares the vault's expected liabilities with its real native balance and clears queued claims only when an aggregate balance shortfall proves GEN left the vault. No owner/admin settlement-clearing path exists.
 
 ## Tech Stack
 
@@ -131,7 +131,7 @@ Write methods:
 
 - `deposit()` payable
 - `withdraw(amount: u256)`
-- `mark_withdrawal_paid(user: str, amount: u256)`
+- `confirm_settlements()`
 - `rebalance()`
 
 Read methods:

@@ -31,6 +31,9 @@ def test_initial_state(direct_deploy):
     assert allocation["reserve_bps"] == 4000
     assert allocation["protection_bps"] == 1500
     assert allocation["total_bps"] == 10000
+    assert allocation["growth_balance"] == 0
+    assert allocation["reserve_balance"] == 0
+    assert allocation["protection_balance"] == 0
 
 
 def test_deposit_increases_user_balance_and_total_deposits(
@@ -48,7 +51,7 @@ def test_deposit_increases_user_balance_and_total_deposits(
     assert contract.get_accounting()["total_claims"] == 1000
 
 
-def test_withdraw_preserves_claim_as_pending_until_payout(
+def test_withdraw_requests_async_payout_and_preserves_claim(
     direct_vm, direct_deploy, direct_alice
 ):
     contract = deploy_liverome(direct_deploy)
@@ -63,7 +66,7 @@ def test_withdraw_preserves_claim_as_pending_until_payout(
     key = contract.get_last_withdraw()["key"]
     assert contract.get_user_balance_key(key) == 600
     assert contract.get_user_pending_withdrawal_key(key) == 400
-    assert contract.get_total_deposits() == 1000
+    assert contract.get_total_deposits() == 600
     assert contract.get_total_pending_withdrawals() == 400
     assert contract.get_last_withdraw()["payout_requested_amount"] == 400
     assert contract.get_last_withdraw()["payout_request_count"] == 1
@@ -74,8 +77,8 @@ def test_withdraw_preserves_claim_as_pending_until_payout(
     assert accounting["total_claims"] == 1000
 
 
-def test_mark_withdrawal_paid_reduces_total_after_successful_payout(
-    direct_vm, direct_deploy, direct_owner, direct_alice, direct_bob
+def test_confirm_settlements_is_permissionless_and_reconciles_balance_shortfall(
+    direct_vm, direct_deploy, direct_alice, direct_bob
 ):
     contract = deploy_liverome(direct_deploy)
 
@@ -87,16 +90,14 @@ def test_mark_withdrawal_paid_reduces_total_after_successful_payout(
     key = contract.get_last_withdraw()["key"]
 
     direct_vm.sender = direct_bob
-    with direct_vm.expect_revert("Only owner"):
-        contract.mark_withdrawal_paid(key, 400)
-
-    direct_vm.sender = direct_owner
-    contract.mark_withdrawal_paid(key, 400)
+    confirmed = contract.confirm_settlements()
 
     assert contract.get_user_balance_key(key) == 600
     assert contract.get_user_pending_withdrawal_key(key) == 0
     assert contract.get_total_deposits() == 600
     assert contract.get_total_pending_withdrawals() == 0
+    assert contract.get_settled_withdrawals_total() == 400
+    assert confirmed == 400
 
 
 def test_withdraw_more_than_available_reverts_without_state_loss(
@@ -132,9 +133,34 @@ def test_rebalance_changes_actual_allocation_fields(direct_vm, direct_deploy, di
     assert allocation["reserve_bps"] == 2000
     assert allocation["protection_bps"] == 1000
     assert allocation["total_bps"] == 10000
+    assert allocation["growth_balance"] == 0
+    assert allocation["reserve_balance"] == 0
+    assert allocation["protection_balance"] == 0
 
     history = contract.get_history()
     assert len(history) == 1
     assert history[0]["regime"] == "bull"
     assert history[0]["new_strategy"] == "aggressive"
     assert history[0]["growth_bps"] == 7000
+
+
+def test_rebalance_partitions_value_bearing_deposits(direct_vm, direct_deploy, direct_alice):
+    contract = deploy_liverome(direct_deploy)
+
+    direct_vm.sender = direct_alice
+    direct_vm.value = 10000
+    contract.deposit()
+    direct_vm.value = 0
+    mock_market(direct_vm, 7.79)
+
+    contract.rebalance()
+
+    allocation = contract.get_allocation()
+    assert allocation["growth_balance"] == 7000
+    assert allocation["reserve_balance"] == 2000
+    assert allocation["protection_balance"] == 1000
+    assert (
+        allocation["growth_balance"]
+        + allocation["reserve_balance"]
+        + allocation["protection_balance"]
+    ) == contract.get_total_deposits()

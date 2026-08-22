@@ -7,21 +7,22 @@ Users can deposit native GEN, request withdrawals, and trigger a live market reb
 ## Current Bradbury Contract
 
 ```text
-0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+pending redeploy for async-settlement build
 ```
 
 Explorer:
 
 ```text
-https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+pending new Bradbury explorer link
 ```
 
 ## What Works
 
 - `deposit()` accepts native GEN and increases the user's vault balance.
-- `withdraw(amount)` reduces the available vault balance, records a pending payout claim, and requests native GEN payout with `emit_transfer(..., on="finalized")`.
-- `mark_withdrawal_paid(user, amount)` is owner-only and clears a pending claim only after payout is considered paid.
-- `rebalance()` updates actual allocation fields, not only a label.
+- `withdraw(amount)` reduces the available vault balance, records a pending payout claim, enqueues it, and requests native GEN payout with `emit_transfer(..., on="finalized")`.
+- `confirm_settlements()` is permissionless and clears queued claims only when the contract's real native balance proves GEN left the vault.
+- There is no owner/admin settlement-clearing path.
+- `rebalance()` updates actual value-backed allocation bucket balances, not only a label.
 - `get_allocation()` exposes growth, reserve, and protection basis points.
 - Direct tests prove deposit and withdrawal accounting conserves funds.
 
@@ -61,5 +62,5 @@ npm run test:contract
 ## Notes
 
 - Values are stored in wei-scale `u256` units.
-- Pending payout accounting is intentionally separate from available balances so a withdrawal claim is not erased before payout confirmation.
+- GenLayer does not currently document a contract-readable per-transfer receipt for individual `emit_transfer` calls. Liverome uses aggregate native-balance reconciliation as the strongest documented on-chain proof available today.
 - LLM reasoning is not in the hot consensus path because Bradbury testing showed LLM calls can cause validator timeouts. The current oracle path is deterministic and validator-friendly.
