@@ -10,7 +10,9 @@ interface Props {
   totalPendingWithdrawals: bigint | null;
   allocation: any | null;
   history: any[];
+  connected: boolean;
   onRefresh: () => void;
+  onConfirmSettlements: () => void;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -51,13 +53,16 @@ export function ActivityPanel({
   totalPendingWithdrawals,
   allocation,
   history,
+  connected,
   onRefresh,
+  onConfirmSettlements,
 }: Props) {
   const lastDepositValue = lastDeposit?.value ?? lastDeposit?.amount ?? null;
   const lastWithdrawValue = lastWithdraw?.amount ?? null;
   const lastWithdrawPending = lastWithdraw?.pending ?? null;
   const payoutRequested = lastWithdraw?.payout_requested_amount ?? null;
   const payoutRequestCount = lastWithdraw?.payout_request_count ?? null;
+  const lastConfirmedSettlement = lastWithdraw?.last_confirmed_settlement ?? null;
   const totalAllocation =
     Number(allocation?.growth_bps ?? 0) +
     Number(allocation?.reserve_bps ?? 0) +
@@ -67,6 +72,7 @@ export function ActivityPanel({
   const withdrawAmount = valueToBigInt(lastWithdrawValue);
   const pendingAmount = myPendingWithdrawal ?? valueToBigInt(lastWithdrawPending);
   const requestedAmount = valueToBigInt(payoutRequested);
+  const confirmedSettlementAmount = valueToBigInt(lastConfirmedSettlement);
 
   return (
     <section className="panel panel--activity">
@@ -117,6 +123,12 @@ export function ActivityPanel({
             <span className="log-entry__mono">{String(payoutRequestCount)}</span>
           </div>
         )}
+        {lastConfirmedSettlement !== null && (
+          <div className="log-entry__row">
+            <span className="log-entry__key">last confirmed settlement</span>
+            <span className="log-entry__mono">{fromBaseUnits(confirmedSettlementAmount)} GEN</span>
+          </div>
+        )}
       </div>
 
       <div className="proof-grid" aria-label="Submission evidence">
@@ -155,6 +167,14 @@ export function ActivityPanel({
           value={totalPendingWithdrawals !== null ? `${fromBaseUnits(totalPendingWithdrawals)} GEN pending` : "waiting"}
         />
       </div>
+
+      <button
+        className="btn btn--ghost btn--full"
+        disabled={!connected || tx.status === "pending"}
+        onClick={onConfirmSettlements}
+      >
+        Confirm settlements
+      </button>
 
       <div className="proof">
         {tx.hash && (

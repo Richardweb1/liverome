@@ -141,3 +141,12 @@ export async function writeRebalance(client: GenLayerClient<any>): Promise<strin
     value: 0n,
   })) as string;
 }
+
+export async function writeConfirmSettlements(client: GenLayerClient<any>): Promise<string> {
+  return (await client.writeContract({
+    address: CONTRACT_ADDRESS,
+    functionName: "confirm_settlements",
+    args: [],
+    value: 0n,
+  })) as string;
+}

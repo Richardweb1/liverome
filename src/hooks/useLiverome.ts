@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Hash } from "genlayer-js/types";
-import { getClient, readAllocation, readHistory, readLastDeposit, readLastWithdraw, readMyBalance, readMyPendingWithdrawal, readStrategy, readTotalDeposits, readTotalPendingWithdrawals, writeDeposit, writeRebalance, writeWithdraw } from "../lib/contract";
+import { getClient, readAllocation, readHistory, readLastDeposit, readLastWithdraw, readMyBalance, readMyPendingWithdrawal, readStrategy, readTotalDeposits, readTotalPendingWithdrawals, writeConfirmSettlements, writeDeposit, writeRebalance, writeWithdraw } from "../lib/contract";
 import { toBaseUnits } from "../lib/chain";
 
 export type TxStatus = "idle" | "pending" | "accepted" | "finalized" | "error";
@@ -157,5 +157,10 @@ export function useLiverome(address: string | null) {
     [writeClient, runWrite]
   );
 
-  return { data, loadingReads, tx, refetch, deposit, withdraw, rebalance };
+  const confirmSettlements = useCallback(
+    () => runWrite("Confirm settlements", () => writeConfirmSettlements(writeClient!)),
+    [writeClient, runWrite]
+  );
+
+  return { data, loadingReads, tx, refetch, deposit, withdraw, rebalance, confirmSettlements };
 }

@@ -7,16 +7,16 @@ Users connect a wallet, deposit GEN, withdraw from their internal vault balance,
 ## Live Demo
 
 - App: https://liverome.vercel.app
-- Bradbury contract: pending redeploy for the async-settlement build
-- Previous explorer: https://explorer-bradbury.genlayer.com/address/0x2c9d37F4A84204Fa46112A239665C292E6cDffC5
+- Bradbury contract: `0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6`
+- Contract explorer: https://explorer-bradbury.genlayer.com/address/0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6
 - Contract source: [`contracts/liverome.py`](contracts/liverome.py)
 
 ## Deployed Contract
 
-The current repository source contains the async-settlement build. Deploy a new Bradbury instance from `contracts/liverome.py`, then update the app contract address.
+The current repository source contains the async-settlement build deployed on Bradbury.
 
 ```text
-pending new Bradbury address
+0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6
 ```
 
 Source code:
@@ -28,7 +28,7 @@ contracts/liverome.py
 Explorer:
 
 ```text
-pending new Bradbury explorer link
+https://explorer-bradbury.genlayer.com/address/0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6
 ```
 
 ## What Works Now

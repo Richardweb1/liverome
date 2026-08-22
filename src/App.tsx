@@ -41,7 +41,7 @@ function DashboardStats({
 
 export default function App() {
   const wallet = useWallet();
-  const { data, loadingReads, tx, refetch, deposit, withdraw, rebalance } = useLiverome(wallet.address);
+  const { data, loadingReads, tx, refetch, deposit, withdraw, rebalance, confirmSettlements } = useLiverome(wallet.address);
   const connected = !!wallet.address;
 
   return (
@@ -99,7 +99,9 @@ export default function App() {
           totalPendingWithdrawals={data.totalPendingWithdrawals}
           allocation={data.allocation}
           history={data.history}
+          connected={connected}
           onRefresh={refetch}
+          onConfirmSettlements={confirmSettlements}
         />
         </div>
       </main>

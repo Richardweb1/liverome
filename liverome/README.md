@@ -7,13 +7,13 @@ Users can deposit native GEN, request withdrawals, and trigger a live market reb
 ## Current Bradbury Contract
 
 ```text
-pending redeploy for async-settlement build
+0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6
 ```
 
 Explorer:
 
 ```text
-pending new Bradbury explorer link
+https://explorer-bradbury.genlayer.com/address/0xf884AC8D0E5Afd1635eFF00acE11eD1D86b9bDd6
 ```
 
 ## What Works
