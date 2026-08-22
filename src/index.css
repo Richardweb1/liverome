@@ -287,6 +287,16 @@ h1 {
   border-color: var(--line-2);
 }
 
+.btn--tiny {
+  min-height: 34px;
+  padding: 0 12px;
+  color: var(--text);
+  background: var(--panel-2);
+  border-color: var(--line-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
 .btn--full {
   width: 100%;
   margin-top: 18px;
@@ -386,7 +396,7 @@ h1 {
   font-size: 13px;
 }
 
-.tx-status, .log-entry {
+.tx-status, .log-entry, .proof-item {
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-2);
@@ -431,6 +441,61 @@ h1 {
   text-align: right;
 }
 
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.proof-item {
+  min-height: 92px;
+  padding: 13px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  gap: 7px 9px;
+}
+
+.proof-item--ok {
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.07);
+}
+
+.proof-item__mark {
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: var(--soft);
+  background: rgba(104, 115, 134, 0.18);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.proof-item--ok .proof-item__mark {
+  color: #06110d;
+  background: var(--green);
+}
+
+.proof-item__label {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.proof-item strong {
+  grid-column: 1 / -1;
+  align-self: end;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
 .proof {
   display: flex;
   flex-direction: column;
@@ -449,6 +514,9 @@ h1 {
 @media (max-width: 880px) {
   .stats-grid, .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+  .proof-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .dashboard-grid {
     grid-template-areas:
@@ -473,6 +541,9 @@ h1 {
     flex-direction: column;
   }
   .field__row {
+    grid-template-columns: 1fr;
+  }
+  .proof-grid {
     grid-template-columns: 1fr;
   }
 }

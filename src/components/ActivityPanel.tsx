@@ -3,8 +3,14 @@ import type { TxState } from "../hooks/useLiverome";
 
 interface Props {
   tx: TxState;
+  loadingReads: boolean;
   lastDeposit: any | null;
   lastWithdraw: any | null;
+  myPendingWithdrawal: bigint | null;
+  totalPendingWithdrawals: bigint | null;
+  allocation: any | null;
+  history: any[];
+  onRefresh: () => void;
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -15,15 +21,56 @@ const STATUS_LABEL: Record<string, string> = {
   error: "Error",
 };
 
-export function ActivityPanel({ tx, lastDeposit, lastWithdraw }: Props) {
+function valueToBigInt(value: unknown): bigint {
+  if (typeof value === "bigint") return value;
+  if (typeof value === "number") return BigInt(value);
+  if (typeof value === "string" && value.length > 0) return BigInt(value);
+  return 0n;
+}
+
+function ProofItem({ ok, label, value }: { ok: boolean; label: string; value: string }) {
+  return (
+    <div className={`proof-item ${ok ? "proof-item--ok" : ""}`}>
+      <span className="proof-item__mark">{ok ? "OK" : "--"}</span>
+      <span className="proof-item__label">{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+export function ActivityPanel({
+  tx,
+  loadingReads,
+  lastDeposit,
+  lastWithdraw,
+  myPendingWithdrawal,
+  totalPendingWithdrawals,
+  allocation,
+  history,
+  onRefresh,
+}: Props) {
   const lastDepositValue = lastDeposit?.value ?? lastDeposit?.amount ?? null;
   const lastWithdrawValue = lastWithdraw?.amount ?? null;
   const lastWithdrawPending = lastWithdraw?.pending ?? null;
+  const payoutRequested = lastWithdraw?.payout_requested_amount ?? null;
+  const payoutRequestCount = lastWithdraw?.payout_request_count ?? null;
+  const totalAllocation =
+    Number(allocation?.growth_bps ?? 0) +
+    Number(allocation?.reserve_bps ?? 0) +
+    Number(allocation?.protection_bps ?? 0);
+
+  const depositAmount = valueToBigInt(lastDepositValue);
+  const withdrawAmount = valueToBigInt(lastWithdrawValue);
+  const pendingAmount = myPendingWithdrawal ?? valueToBigInt(lastWithdrawPending);
+  const requestedAmount = valueToBigInt(payoutRequested);
 
   return (
     <section className="panel panel--activity">
       <div className="panel__eyebrow">
         <span>VAULT ACTIVITY</span>
+        <button className="btn btn--tiny" disabled={loadingReads} onClick={onRefresh}>
+          {loadingReads ? "Refreshing" : "Refresh"}
+        </button>
       </div>
 
       {tx.status !== "idle" && (
@@ -54,6 +101,55 @@ export function ActivityPanel({ tx, lastDeposit, lastWithdraw }: Props) {
             <span className="log-entry__mono">{fromBaseUnits(lastWithdrawPending)} GEN</span>
           </div>
         )}
+        {payoutRequested !== null && (
+          <div className="log-entry__row">
+            <span className="log-entry__key">native payout requested</span>
+            <span className="log-entry__mono">{fromBaseUnits(payoutRequested)} GEN</span>
+          </div>
+        )}
+        {payoutRequestCount !== null && (
+          <div className="log-entry__row">
+            <span className="log-entry__key">payout request count</span>
+            <span className="log-entry__mono">{String(payoutRequestCount)}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="proof-grid" aria-label="Submission evidence">
+        <ProofItem
+          ok={depositAmount > 0n}
+          label="Deposit recorded"
+          value={depositAmount > 0n ? `${fromBaseUnits(depositAmount)} GEN` : "waiting"}
+        />
+        <ProofItem
+          ok={withdrawAmount > 0n}
+          label="Withdraw recorded"
+          value={withdrawAmount > 0n ? `${fromBaseUnits(withdrawAmount)} GEN` : "waiting"}
+        />
+        <ProofItem
+          ok={requestedAmount > 0n}
+          label="Native payout requested"
+          value={requestedAmount > 0n ? `${fromBaseUnits(requestedAmount)} GEN` : "waiting"}
+        />
+        <ProofItem
+          ok={pendingAmount > 0n}
+          label="Claim preserved"
+          value={pendingAmount > 0n ? `${fromBaseUnits(pendingAmount)} GEN pending` : "waiting"}
+        />
+        <ProofItem
+          ok={totalAllocation === 10000 && history.length > 0}
+          label="Allocation updated"
+          value={
+            totalAllocation === 10000
+              ? `${allocation?.growth_bps ?? 0}/${allocation?.reserve_bps ?? 0}/${allocation?.protection_bps ?? 0} bps`
+              : "waiting"
+          }
+        />
+        <ProofItem
+          ok={(totalPendingWithdrawals ?? 0n) >= pendingAmount && pendingAmount > 0n}
+          label="Vault accounting"
+          value={totalPendingWithdrawals !== null ? `${fromBaseUnits(totalPendingWithdrawals)} GEN pending` : "waiting"}
+        />
       </div>
 
       <div className="proof">

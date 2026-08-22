@@ -41,7 +41,7 @@ function DashboardStats({
 
 export default function App() {
   const wallet = useWallet();
-  const { data, tx, deposit, withdraw, rebalance } = useLiverome(wallet.address);
+  const { data, loadingReads, tx, refetch, deposit, withdraw, rebalance } = useLiverome(wallet.address);
   const connected = !!wallet.address;
 
   return (
@@ -90,7 +90,17 @@ export default function App() {
             onRebalance={rebalance}
           />
 
-        <ActivityPanel tx={tx} lastDeposit={data.lastDeposit} lastWithdraw={data.lastWithdraw} />
+        <ActivityPanel
+          tx={tx}
+          loadingReads={loadingReads}
+          lastDeposit={data.lastDeposit}
+          lastWithdraw={data.lastWithdraw}
+          myPendingWithdrawal={data.myPendingWithdrawal}
+          totalPendingWithdrawals={data.totalPendingWithdrawals}
+          allocation={data.allocation}
+          history={data.history}
+          onRefresh={refetch}
+        />
         </div>
       </main>
     </>
